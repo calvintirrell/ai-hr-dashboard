@@ -1,0 +1,26 @@
+employee_id,cert_name,issuer,category,date_earned,expires_on
+e001,AWS Certified Machine Learning - Specialty,AWS,ML,2024-03-10,2027-03-10
+e001,Deep Learning Specialization,Coursera,ML,2023-11-05,
+e001,Pydantic AI Practitioner,Pydantic,ML,2025-08-12,
+e001,LangChain Expert Certification,LangChain,ML,2025-12-01,
+e002,AWS Certified Solutions Architect - Professional,AWS,Cloud,2022-08-15,2025-08-15
+e002,Certified Kubernetes Administrator (CKA),CNCF,Infra,2023-06-01,2026-06-01
+e002,Certified Kubernetes Application Developer (CKAD),CNCF,Infra,2023-09-15,2026-09-15
+e002,HashiCorp Terraform Associate,HashiCorp,Infra,2024-02-20,2026-02-20
+e002,Google Cloud Professional Cloud Architect,Google,Cloud,2025-01-10,2027-01-10
+e003,Certified Scrum Product Owner,Scrum Alliance,Product,2024-05-20,2026-05-20
+e003,Pragmatic Marketing Certified - Level III,Pragmatic Institute,Product,2025-03-15,
+e004,LinkedIn Certified Professional Recruiter,LinkedIn,Recruiting,2024-04-10,
+e004,AIRS Certified Diversity and Inclusion Recruiter,AIRS,Recruiting,2025-06-22,
+e005,Engineering Management Specialization,Coursera,Management,2022-10-15,
+e005,Project Management Professional (PMP),PMI,Management,2023-04-20,2026-04-20
+e005,AWS Certified Cloud Practitioner,AWS,Cloud,2024-08-05,2027-08-05
+e006,Reinforcement Learning Specialization,Coursera,ML,2023-12-01,
+e006,Generative AI with LLMs,DeepLearning.AI,ML,2024-09-15,
+e007,NN/g UX Certification,Nielsen Norman Group,Design,2024-08-12,
+e008,Google Cloud Professional Data Engineer,Google,Data,2023-10-10,2025-10-10
+e008,dbt Analytics Engineer Certification,dbt Labs,Data,2024-05-15,2026-05-15
+e008,Causal Inference for Data Science,DataCamp,Data,2025-02-20,
+e009,Stanford Executive Program,Stanford GSB,Leadership,2022-06-30,
+e009,AWS Certified Solutions Architect - Associate,AWS,Cloud,2021-04-15,2024-04-15
+e010,AWS Certified Cloud Practitioner,AWS,Cloud,2025-05-10,2028-05-10

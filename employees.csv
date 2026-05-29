@@ -1,0 +1,11 @@
+employee_id,name,role,department,level,hire_date,manager_id
+e001,Alex Rivera,Senior ML Engineer,Engineering,IC4,2023-04-15,e005
+e002,Priya Shankar,Staff Software Engineer,Engineering,IC5,2022-02-01,e009
+e003,Jordan Kim,"Product Manager, Platform",Product,M3,2024-03-10,
+e004,Sam Okafor,"Recruiter, AI/ML",People,IC3,2024-01-20,
+e005,Riley Chen,Engineering Manager,Engineering,M4,2022-06-01,e009
+e006,Morgan Bailey,Research Scientist,Research,IC5,2023-09-01,
+e007,Taylor Nguyen,"Designer, AI Tools",Design,IC3,2024-05-15,
+e008,Casey Patel,Senior Data Scientist,Data Science,IC4,2023-08-12,
+e009,Drew Hassan,Director of Engineering,Engineering,D5,2021-01-10,
+e010,Quinn Romero,Software Engineer II,Engineering,IC2,2025-03-01,e005

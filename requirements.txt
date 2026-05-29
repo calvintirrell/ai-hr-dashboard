@@ -1,0 +1,7 @@
+pydantic-ai
+python-dotenv
+httpx
+nest-asyncio
+chromadb
+pandas
+streamlit
