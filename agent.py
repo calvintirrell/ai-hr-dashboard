@@ -1,9 +1,8 @@
 """
 Talent Growth Agent — internal HR dashboard.
 
-Three focused Pydantic AI agents, all sharing the same tool kit (db.py wrappers):
+Two focused Pydantic AI agents, sharing the same tool kit (db.py wrappers):
   - skill_gap_agent      -> SkillGapReport
-  - promotion_agent      -> PromotionCandidates
   - recommendation_agent -> CertRecommendation
 """
 
@@ -13,28 +12,14 @@ from pydantic_ai import Agent
 from dotenv import load_dotenv
 from agent_tracer import print_agent_trace
 import datetime as dt
-import nest_asyncio
 import db
 
 load_dotenv()
-nest_asyncio.apply()
 
 MODEL = "google:gemini-3-flash-preview"
 
 
 # --- Structured outputs ---
-
-class CandidateSummary(BaseModel):
-    employee_id: str
-    name: str
-    rationale: str = Field(description="Why this person is a strong candidate, citing specific certifications and review evidence.")
-    suggested_next_role: str | None = Field(default=None, description="A concrete next title or scope.")
-
-
-class PromotionCandidates(BaseModel):
-    candidates: list[CandidateSummary]
-    overall_summary: str = Field(description="One short paragraph summarizing the slate.")
-
 
 class SkillGap(BaseModel):
     skill_or_category: str
@@ -181,21 +166,6 @@ skill_gap_agent = Agent(
 )
 
 
-promotion_agent = Agent(
-    MODEL,
-    output_type=PromotionCandidates,
-    tools=SHARED_TOOLS,
-    system_prompt=(
-        "You are a talent analytics agent that identifies promotion-ready employees at a company called Aressa. "
-        "Strong candidates typically have: (1) a rising or consistently-high performance trajectory (call get_review_trajectory for each candidate), "
-        "(2) recent relevant certifications, and (3) review text indicating leadership, mentorship, or readiness for next scope. "
-        "Avoid recommending employees whose trajectory is declining or whose recent growth_areas flag engagement or collaboration concerns. "
-        "For each candidate in your output, cite specific evidence from their certifications and review text in the rationale. "
-        "Suggest a concrete next role where appropriate (e.g. 'Staff Software Engineer', 'Senior Engineering Manager')."
-    ),
-)
-
-
 recommendation_agent = Agent(
     MODEL,
     output_type=CertRecommendation,
@@ -218,11 +188,11 @@ if __name__ == "__main__":
     import asyncio
 
     print("Aressa Talent Growth Agent")
-    print("Modes: (1) skill-gap  (2) promotion  (3) recommend  (q) quit")
+    print("Modes: (1) skill-gap  (2) recommend  (q) quit")
 
     while True:
         try:
-            mode = input("\nMode [1/2/3/q]: ").strip().lower()
+            mode = input("\nMode [1/2/q]: ").strip().lower()
             if mode in ("q", "exit", "quit"):
                 break
 
@@ -242,20 +212,6 @@ if __name__ == "__main__":
                     print(f"      Action:   {g.recommended_action}")
 
             elif mode == "2":
-                query = input("Promotion question (e.g. 'who is ready for promotion?'): ").strip()
-                if not query:
-                    continue
-                result = asyncio.run(promotion_agent.run(query))
-                print_agent_trace(result)
-                report = result.output
-                print(f"\nSummary: {report.overall_summary}")
-                print(f"\nCandidates ({len(report.candidates)}):")
-                for c in report.candidates:
-                    next_role = c.suggested_next_role or "next-level scope"
-                    print(f"  - {c.name} ({c.employee_id}) -> {next_role}")
-                    print(f"      {c.rationale}")
-
-            elif mode == "3":
                 eid = input("Employee id (e.g. e001): ").strip()
                 if not eid:
                     continue
@@ -270,7 +226,7 @@ if __name__ == "__main__":
                     print(f"      {c.reasoning}")
 
             else:
-                print("Unknown mode. Use 1, 2, 3, or q.")
+                print("Unknown mode. Use 1, 2, or q.")
         except KeyboardInterrupt:
             break
 

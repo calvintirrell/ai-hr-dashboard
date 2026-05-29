@@ -18,18 +18,14 @@ EMPLOYEES = "employees"
 CERTIFICATIONS = "certifications"
 REVIEWS = "performance_reviews"
 
-_client = None
-
-
-def _get_client():
-    global _client
-    if _client is None:
-        _client = chromadb.PersistentClient(path=str(CHROMA_DIR))
-    return _client
+# Eager init on the main thread at import time — Pydantic AI dispatches
+# sync tools to anyio worker threads in parallel, and Chroma's singleton
+# tracker corrupts if PersistentClient is constructed concurrently.
+_client = chromadb.PersistentClient(path=str(CHROMA_DIR))
 
 
 def _collection(name: str):
-    return _get_client().get_or_create_collection(name=name)
+    return _client.get_or_create_collection(name=name)
 
 
 def _where(filters: dict) -> dict | None:
@@ -49,13 +45,12 @@ def is_empty() -> bool:
 
 
 def reset_all() -> None:
-    client = _get_client()
     for name in (EMPLOYEES, CERTIFICATIONS, REVIEWS):
         try:
-            client.delete_collection(name)
+            _client.delete_collection(name)
         except Exception:
             pass
-        client.get_or_create_collection(name=name)
+        _client.get_or_create_collection(name=name)
 
 
 # --- Employees ---
