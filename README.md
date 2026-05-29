@@ -23,6 +23,7 @@ Earlier iterations also included AI-driven promotion-candidate identification an
 | `agent.py` | Two Pydantic AI agents (`skill_gap_agent`, `recommendation_agent`) sharing one 12-tool kit. Includes a CLI driver. |
 | `agent_tracer.py` | `build_agent_trace(result) -> list[dict]` for structured trace records used by the Streamlit UI, plus `print_agent_trace(result)` as a CLI pretty-printer wrapping it. |
 | `db.py` | ChromaDB wrapper exposing three collections (`employees`, `certifications`, `performance_reviews`) with filtered list, semantic search, and bulk-seed functions. Client is eager-initialized at module load to avoid a thread-race when pydantic-ai dispatches tools in parallel. |
+| `evals.py` | Reproducible eval suite — 5 standalone evals covering skill-gap and cert-rec golden paths. Loose assertions survive LLM phrasing variation while catching real regressions. Run via `python evals.py`. |
 | `employees.csv` | Seed roster of 10 fictional employees (`e001`–`e010`) — id, name, role, department, level, hire date, manager. |
 | `certifications.csv` | 25 cert records across the 10 employees. 7 are intentionally expired as of mid-2026 to exercise the expired-cert reasoning paths. |
 | `performance_reviews.csv` | 20 review records (2 cycles per employee). Trajectories engineered to include rising, stable, and declining performers. |
@@ -53,6 +54,9 @@ streamlit run app.py
 
 # 5b. ...or use the bare CLI
 python agent.py
+
+# 5c. (After prompt or model changes) re-run the eval suite to catch regressions
+python evals.py
 ```
 
 **Streamlit dashboard (`app.py`)** opens at `http://localhost:8501` with a sidebar mode selector, a CSV uploader for ad-hoc data ingestion, and a danger-zone reset button. Pick a mode and a query, click Run, and the agent's tool-call trace is collapsed below each result.
@@ -102,8 +106,11 @@ This means semantic search can answer questions like *"who works on infrastructu
 
 ## Upcoming work
 
-1. **Tighten skill-gap prompt against count hallucinations.** During validation, one skill-gap card said *"Coverage: 4 of 5 certs are expired"* while only naming 2 expired certs (the recommendation was still correct; the headline number was wrong). Adding *"Always recount before stating any quantity in your output, and only cite numbers you can name the source rows for"* to `skill_gap_agent`'s system prompt should fix it.
-2. **Add a "manager review required" disclaimer** in the Cert Recommendations panel footer. Individual development plans should never be acted on without manager involvement; the UI should say so explicitly even though the agent itself stays at the capability level.
-3. **Improve cert-recommendation grounding with a live catalog.** The agent currently suggests real-sounding certs but doesn't verify they exist or fetch up-to-date pricing, prerequisites, or curricula. A future step could call out to a real catalog (Credly, Coursera, AWS Skill Builder, etc.) and ground recommendations in actual offerings.
-4. **Add a reproducible eval suite.** Run a fixed set of queries through both agents and snapshot expected outputs (e.g. "recommend certs for e002 Priya" must include AWS Pro renewal). Catches regressions when the prompt, model, or data changes.
-5. **(Optional, post-MVP)** Wire ingestion sources beyond CSV — cert data pulled from Credly, performance reviews from an HRIS API, employee roster from BambooHR / Rippling / etc.
+1. **Improve cert-recommendation grounding with a live catalog.** The agent currently suggests real-sounding certs but doesn't verify they exist or fetch up-to-date pricing, prerequisites, or curricula. A future step could call out to a real catalog (Credly, Coursera, AWS Skill Builder, etc.) and ground recommendations in actual offerings.
+2. **(Optional, post-MVP)** Wire ingestion sources beyond CSV — cert data pulled from Credly, performance reviews from an HRIS API, employee roster from BambooHR / Rippling / etc.
+
+### Completed since MVP
+
+- ~~Tighten skill-gap prompt against count hallucinations~~ (commit `2801cac`) — added a recount-before-quantifying instruction to `skill_gap_agent`.
+- ~~Manager-review disclaimer~~ (commit `2801cac`) — added a Streamlit caption below the Cert Recommendations output.
+- ~~Reproducible eval suite~~ (this commit) — `evals.py` covers 5 golden paths; all pass on the current `main`.
