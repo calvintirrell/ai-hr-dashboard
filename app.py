@@ -182,4 +182,8 @@ elif mode == "Cert Recommendations":
                     for c in report.recommended_certs:
                         with st.expander(f"{c.cert_name} — {c.issuer}"):
                             st.write(c.reasoning)
+                    st.caption(
+                        "These are AI-generated suggestions, not directives. "
+                        "Any individual's development plan should be discussed with the employee and their manager."
+                    )
                 render_trace(result)

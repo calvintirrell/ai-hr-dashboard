@@ -4,6 +4,12 @@ Talent Growth Agent — internal HR dashboard.
 Two focused Pydantic AI agents, sharing the same tool kit (db.py wrappers):
   - skill_gap_agent      -> SkillGapReport
   - recommendation_agent -> CertRecommendation
+
+Activate .venv (if needed):
+  - source .venv/bin/activate
+
+Run this to start the web app:
+  - streamlit run app.py
 """
 
 from typing import Literal
@@ -161,7 +167,11 @@ skill_gap_agent = Agent(
         "Surface concrete gaps with specific numbers and names — e.g. 'Only 1 of 5 Engineering employees holds a Kubernetes cert'. "
         "Always call get_today and compare against each cert's expires_on field — expired certs are a real gap. "
         "Each gap must have a risk_level (low / medium / high) and a concrete recommended_action. "
-        "Do not speculate beyond what the tools return."
+        "Do not speculate beyond what the tools return. "
+        "CRITICAL: before stating any quantity in current_coverage (e.g. 'X of Y certs are expired', "
+        "'only Z employees hold this cert'), recount the actual records and ensure you can name every "
+        "individual row included in that count. If you cannot back the number up with named source rows, "
+        "use a qualitative description instead (e.g. 'most of the department's certifications have lapsed')."
     ),
 )
 
