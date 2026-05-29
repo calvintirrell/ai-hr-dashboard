@@ -13,6 +13,14 @@ import streamlit as st
 import db
 from agent import skill_gap_agent, recommendation_agent
 from agent_tracer import build_agent_trace
+from ingestion import CsvFileSource
+
+
+# Current data source. Swap this for BambooHRSource / CredlySource / etc.
+# when real API credentials are available — see ingestion.py for the pattern.
+DATA_SOURCE = CsvFileSource(
+    "employees.csv", "certifications.csv", "performance_reviews.csv"
+)
 
 
 st.set_page_config(page_title="Aressa HR Dashboard", layout="wide")
@@ -22,10 +30,8 @@ st.set_page_config(page_title="Aressa HR Dashboard", layout="wide")
 
 if "seed_check_done" not in st.session_state:
     if db.is_empty():
-        with st.spinner("Seeding initial data into ChromaDB..."):
-            counts = db.seed_from_csvs(
-                "employees.csv", "certifications.csv", "performance_reviews.csv"
-            )
+        with st.spinner(f"Seeding initial data from {DATA_SOURCE.source_name}..."):
+            counts = db.seed_from_source(DATA_SOURCE)
             st.toast(
                 f"Seeded {counts['employees']} employees, "
                 f"{counts['certifications']} certs, "
@@ -73,6 +79,7 @@ def render_trace(result) -> None:
 
 with st.sidebar:
     st.header("Aressa HR Dashboard")
+    st.caption(f"Connected to: **{DATA_SOURCE.source_name}**")
     mode = st.radio(
         "Mode",
         options=["Skill Gap Analysis", "Cert Recommendations"],
@@ -111,12 +118,11 @@ with st.sidebar:
     if st.checkbox("I want to reset all data"):
         if st.button("Reset DB and re-seed"):
             db.reset_all()
-            counts = db.seed_from_csvs(
-                "employees.csv", "certifications.csv", "performance_reviews.csv"
-            )
+            counts = db.seed_from_source(DATA_SOURCE)
             st.success(
                 f"Reset complete. Re-seeded {counts['employees']} employees, "
-                f"{counts['certifications']} certs, {counts['performance_reviews']} reviews."
+                f"{counts['certifications']} certs, {counts['performance_reviews']} reviews "
+                f"from {DATA_SOURCE.source_name}."
             )
             st.rerun()
 

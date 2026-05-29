@@ -195,21 +195,32 @@ def search_reviews(query: str, k: int = 5) -> list[dict]:
 
 # --- Bulk seed ---
 
-def seed_from_csvs(employees_csv: str, certifications_csv: str, reviews_csv: str) -> dict:
-    """Ingest all three CSVs into their collections. Idempotent (uses upsert)."""
-    emp_df = pd.read_csv(employees_csv).fillna("")
-    cert_df = pd.read_csv(certifications_csv).fillna("")
-    rev_df = pd.read_csv(reviews_csv).fillna("")
+def seed_from_source(source) -> dict:
+    """Ingest all three entities from any IngestionSource into ChromaDB.
 
-    for _, r in emp_df.iterrows():
-        upsert_employee(**r.to_dict())
-    for _, r in cert_df.iterrows():
-        upsert_certification(**r.to_dict())
-    for _, r in rev_df.iterrows():
-        upsert_review(**r.to_dict())
+    `source` must satisfy the IngestionSource protocol from ingestion.py
+    (duck-typed here to avoid a circular import). Idempotent — uses upsert.
+    """
+    employees = source.list_employees()
+    certifications = source.list_certifications()
+    reviews = source.list_performance_reviews()
+
+    for row in employees:
+        upsert_employee(**row)
+    for row in certifications:
+        upsert_certification(**row)
+    for row in reviews:
+        upsert_review(**row)
 
     return {
-        "employees": len(emp_df),
-        "certifications": len(cert_df),
-        "performance_reviews": len(rev_df),
+        "employees": len(employees),
+        "certifications": len(certifications),
+        "performance_reviews": len(reviews),
     }
+
+
+def seed_from_csvs(employees_csv: str, certifications_csv: str, reviews_csv: str) -> dict:
+    """Backwards-compatible wrapper: construct a CsvFileSource and seed from it."""
+    from ingestion import CsvFileSource
+    source = CsvFileSource(employees_csv, certifications_csv, reviews_csv)
+    return seed_from_source(source)

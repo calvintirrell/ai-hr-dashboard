@@ -24,6 +24,7 @@ Earlier iterations also included AI-driven promotion-candidate identification an
 | `agent_tracer.py` | `build_agent_trace(result) -> list[dict]` for structured trace records used by the Streamlit UI, plus `print_agent_trace(result)` as a CLI pretty-printer wrapping it. |
 | `db.py` | ChromaDB wrapper exposing three collections (`employees`, `certifications`, `performance_reviews`) with filtered list, semantic search, and bulk-seed functions. Client is eager-initialized at module load to avoid a thread-race when pydantic-ai dispatches tools in parallel. |
 | `evals.py` | Reproducible eval suite — 5 standalone evals covering skill-gap and cert-rec golden paths. Loose assertions survive LLM phrasing variation while catching real regressions. Run via `python evals.py`. |
+| `ingestion.py` | Pluggable `IngestionSource` ABC + `CsvFileSource` reference implementation. `BambooHRSource` and `CredlySource` are documented stubs showing how a real HRIS / cert-platform adapter would slot in. |
 | `employees.csv` | Seed roster of 10 fictional employees (`e001`–`e010`) — id, name, role, department, level, hire date, manager. |
 | `certifications.csv` | 25 cert records across the 10 employees. 7 are intentionally expired as of mid-2026 to exercise the expired-cert reasoning paths. |
 | `performance_reviews.csv` | 20 review records (2 cycles per employee). Trajectories engineered to include rising, stable, and declining performers. |
@@ -92,6 +93,16 @@ Each Chroma collection embeds different document text:
 
 This means semantic search can answer questions like *"who works on infrastructure?"*, *"any Kubernetes certs?"*, or *"who has strong mentorship reviews?"* — without needing per-question SQL.
 
+### Pluggable data sources
+
+`db.py` is decoupled from where the data comes from. Anything that satisfies the `IngestionSource` ABC in `ingestion.py` can feed it:
+
+```python
+db.seed_from_source(source: IngestionSource) -> dict
+```
+
+The shipping default is `CsvFileSource`, which reads the three CSV files in the repo root. To wire a real HRIS or cert platform, implement a new subclass with three methods (`list_employees`, `list_certifications`, `list_performance_reviews`) returning dicts matching the CSV column shape, then change the `DATA_SOURCE = ...` line at the top of `app.py`. Two documented stubs (`BambooHRSource`, `CredlySource`) in `ingestion.py` already describe the endpoints, auth, and field mappings a real adapter would use.
+
 ## Current status
 
 **MVP complete and shipping on `main`.** All nine build steps are done:
@@ -107,10 +118,11 @@ This means semantic search can answer questions like *"who works on infrastructu
 ## Upcoming work
 
 1. **Improve cert-recommendation grounding with a live catalog.** The agent currently suggests real-sounding certs but doesn't verify they exist or fetch up-to-date pricing, prerequisites, or curricula. A future step could call out to a real catalog (Credly, Coursera, AWS Skill Builder, etc.) and ground recommendations in actual offerings.
-2. **(Optional, post-MVP)** Wire ingestion sources beyond CSV — cert data pulled from Credly, performance reviews from an HRIS API, employee roster from BambooHR / Rippling / etc.
+2. **Implement a real `IngestionSource` adapter.** The `BambooHRSource` and `CredlySource` stubs in `ingestion.py` document the endpoints and field mappings — a real implementation needs API credentials and ~100 lines of mapping code per source.
 
 ### Completed since MVP
 
 - ~~Tighten skill-gap prompt against count hallucinations~~ (commit `2801cac`) — added a recount-before-quantifying instruction to `skill_gap_agent`.
 - ~~Manager-review disclaimer~~ (commit `2801cac`) — added a Streamlit caption below the Cert Recommendations output.
-- ~~Reproducible eval suite~~ (this commit) — `evals.py` covers 5 golden paths; all pass on the current `main`.
+- ~~Reproducible eval suite~~ (commit `1b00cb0`) — `evals.py` covers 5 golden paths; all pass on the current `main`.
+- ~~Pluggable ingestion pattern beyond CSV~~ (this commit) — `IngestionSource` ABC in `ingestion.py` decouples storage from data source; CsvFileSource is shipped; BambooHRSource and CredlySource are documented stubs ready for someone with API access to fill in.
