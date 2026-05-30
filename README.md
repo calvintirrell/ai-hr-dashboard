@@ -70,6 +70,83 @@ On first run, ChromaDB will be empty; the dashboard / CLI seeds it from the thre
 
 ## Architecture
 
+```mermaid
+flowchart TB
+    %% Entry points
+    browser([User in browser])
+    terminal([User in terminal])
+
+    subgraph entry["Entry surfaces"]
+        app["app.py<br/>(Streamlit dashboard)"]
+        cli["agent.py CLI driver<br/>python agent.py"]
+        evals["evals.py<br/>(5 regression evals)"]
+    end
+
+    subgraph agents["Agent layer — agent.py"]
+        skill["skill_gap_agent<br/>→ SkillGapReport"]
+        rec["recommendation_agent<br/>→ CertRecommendation"]
+        tools["12 shared tools<br/>list / search / filter / today /<br/>get_employee_detail /<br/>get_review_trajectory"]
+    end
+
+    gemini[["Google Gemini API<br/>gemini-3-flash-preview"]]
+
+    subgraph storage["Storage layer — db.py"]
+        dbpy["db.py functions:<br/>upsert / list / search /<br/>seed_from_source"]
+        chroma[("ChromaDB ./.chroma/<br/>employees · certifications ·<br/>performance_reviews")]
+    end
+
+    subgraph ingestion["Ingestion layer — ingestion.py"]
+        csv_src["CsvFileSource<br/>(active)"]
+        stubs["BambooHRSource<br/>CredlySource<br/>(documented stubs)"]
+        csvs[/"3 CSV files on disk"/]
+    end
+
+    tracer["agent_tracer.py<br/>build_agent_trace(result)"]
+
+    %% Entry → entry surface
+    browser --> app
+    terminal --> cli
+    terminal --> evals
+
+    %% Entry surfaces → agents
+    app -->|user query| skill
+    app -->|user query| rec
+    cli --> skill
+    cli --> rec
+    evals -->|fixed query| skill
+    evals -->|fixed query| rec
+
+    %% Agent reasoning + tools
+    skill <-->|reasoning loop| gemini
+    rec <-->|reasoning loop| gemini
+    skill --> tools
+    rec --> tools
+
+    %% Tools → storage
+    tools --> dbpy
+    dbpy <--> chroma
+
+    %% Seeding flow
+    app -.first launch if empty.-> dbpy
+    dbpy -->|seed_from_source| csv_src
+    csv_src --> csvs
+
+    %% Tracer
+    skill -.result messages.-> tracer
+    rec -.result messages.-> tracer
+    tracer -->|step records| app
+```
+
+Key things the diagram makes visible:
+
+- **Three entry surfaces** (Streamlit UI, CLI driver, eval suite) all converge on the same two agents — `evals.py` exercises the exact same code path as a real user, which is why it catches real regressions.
+- **The reasoning loop** between each agent and Gemini is bidirectional: agent prompts → Gemini decides which tool to call → tool runs → result returns → agent decides next move, until it emits the structured output.
+- **Tools are a hard boundary** between the agents and storage. Agents never touch ChromaDB directly — only through the 12 named tool functions.
+- **Ingestion is decoupled from storage.** `db.seed_from_source` accepts any `IngestionSource`; swapping `CsvFileSource` for a future `BambooHRSource` is one line in `app.py`.
+- **The tracer is a side channel** — only the Streamlit UI consumes it (dashed lines), because the CLI and evals don't need an interactive trace view.
+
+Simpler text-only view of the core call chain, for quick reference:
+
 ```
 agent.py (2 agents)
     │
